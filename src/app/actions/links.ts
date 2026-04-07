@@ -1,8 +1,8 @@
 "use server";
 
-import { createClient } from "@vercel/kv";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
+import { getKvClient } from "@/app/lib/kv";
 
 export interface LinkItem {
   id: string;
@@ -10,14 +10,6 @@ export interface LinkItem {
   title: string;
   createdAt: number;
 }
-
-// Creamos un cliente que soporte las variables antiguas de Vercel KV o las nuevas de Upstash
-export const kvClient = createClient({
-  url: process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || "",
-  token: process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || "",
-});
-
-// Función para separar la base de datos principal de la de invitados y nuevos usuarios
 async function getBoardKey() {
   const cookieStore = await cookies();
   const token = cookieStore.get("auth_token")?.value;
@@ -57,7 +49,7 @@ export async function addLink(formData: FormData) {
 
   try {
     const boardKey = await getBoardKey();
-    await kvClient.lpush(boardKey, newLink);
+    await getKvClient().lpush(boardKey, newLink);
     revalidatePath("/");
     return { success: true };
   } catch (error: any) {
@@ -72,7 +64,7 @@ export async function addLink(formData: FormData) {
 export async function getLinks(): Promise<LinkItem[]> {
   try {
     const boardKey = await getBoardKey();
-    const links = await kvClient.lrange(boardKey, 0, -1);
+    const links = await getKvClient().lrange(boardKey, 0, -1);
     return (links as unknown as LinkItem[]) || [];
   } catch (error) {
     console.error("KV Fetch Error:", error);
@@ -83,7 +75,7 @@ export async function getLinks(): Promise<LinkItem[]> {
 export async function editLink(id: string, newTitle: string, newUrl: string) {
   try {
     const boardKey = await getBoardKey();
-    const links = (await kvClient.lrange(boardKey, 0, -1)) as unknown as LinkItem[];
+    const links = (await getKvClient().lrange(boardKey, 0, -1)) as unknown as LinkItem[];
     
     const index = links.findIndex(link => link.id === id);
     if (index === -1) return { error: "Link no encontrado" };
@@ -99,7 +91,7 @@ export async function editLink(id: string, newTitle: string, newUrl: string) {
       url: finalUrl
     };
 
-    await kvClient.lset(boardKey, index, updatedItem);
+    await getKvClient().lset(boardKey, index, updatedItem);
     
     revalidatePath("/");
     return { success: true };

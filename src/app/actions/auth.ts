@@ -1,9 +1,9 @@
 "use server";
 
+import { getKvClient } from "@/app/lib/kv";
+import crypto from "crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { kvClient } from "./links";
-import crypto from "crypto";
 
 const hashPass = (pass: string) => crypto.createHash('sha256').update(pass).digest('hex');
 
@@ -21,7 +21,7 @@ export async function login(formData: FormData) {
   } else {
     // Buscar usuario en Base de Datos KV
     try {
-      const storedPassHash = await kvClient.get(`user:${username.toLowerCase()}`);
+      const storedPassHash = await getKvClient().get(`user:${username.toLowerCase()}`);
       if (storedPassHash && storedPassHash === hashPass(password)) {
         isValid = true;
       }
@@ -60,12 +60,12 @@ export async function register(formData: FormData) {
   }
 
   try {
-    const existingUser = await kvClient.get(`user:${safeUser}`);
+    const existingUser = await getKvClient().get(`user:${safeUser}`);
     if (existingUser) {
       return { error: "El nombre de usuario ya está en uso" };
     }
 
-    await kvClient.set(`user:${safeUser}`, hashPass(password));
+    await getKvClient().set(`user:${safeUser}`, hashPass(password));
 
     // Si tuvo éxito, lo logueamos directamente
     const cookieStore = await cookies();

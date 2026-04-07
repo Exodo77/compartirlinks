@@ -1,0 +1,30 @@
+
+> pegarlinks@0.1.0 build
+> next build
+
+▲ Next.js 16.2.2 (Turbopack)
+
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+  Creating an optimized production build ...
+
+> Build error occurred
+Error: Turbopack build failed with 1 errors:
+./src/app/actions/links.ts:15:17
+Server Actions must be async functions.
+  [90m13 |[0m
+  [90m14 |[0m [90m// Creamos una función que devuelve el cliente para evitar errores durante el Build (compi...[0m
+[31m[1m>[0m [90m15 |[0m [36mexport[0m [36mfunction[0m getKvClient() {
+  [90m   |[0m                 [31m[1m^^^^^^^^^^^[0m
+  [90m16 |[0m   [36mreturn[0m createClient({
+  [90m17 |[0m     url: process.env.[33mKV_REST_API_URL[0m || process.env.[33mUPSTASH_REDIS_REST_URL[0m || [32m"https://dum...[0m
+  [90m18 |[0m     token: process.env.[33mKV_REST_API_TOKEN[0m || process.env.[33mUPSTASH_REDIS_REST_TOKEN[0m || [32m"dummy"[0m,
+
+Ecmascript file had an error
+
+Import trace:
+  Server Component:
+    ./src/app/actions/links.ts
+    ./src/app/page.tsx
+
+
+    at <unknown> (./src/app/actions/links.ts:15:17)
