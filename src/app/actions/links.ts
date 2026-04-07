@@ -12,17 +12,20 @@ export interface LinkItem {
 }
 
 // Creamos un cliente que soporte las variables antiguas de Vercel KV o las nuevas de Upstash
-const kvClient = createClient({
+export const kvClient = createClient({
   url: process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || "",
   token: process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || "",
 });
 
-// Función para separar la base de datos principal de la de invitados
+// Función para separar la base de datos principal de la de invitados y nuevos usuarios
 async function getBoardKey() {
   const cookieStore = await cookies();
   const token = cookieStore.get("auth_token")?.value;
-  // Si está logueado como admin usa su pizarra principal, si es invitado usa una separada
-  return token === "logged_in" ? "my_link_board" : "guest_link_board";
+  
+  if (token === "guest") return "guest_link_board";
+  if (token === "logged_in" || token === "waltter87") return "my_link_board";
+  
+  return `board_${token}`; // Cada usuario nuevo tendrá su "board_maria", "board_pedro", etc.
 }
 
 export async function addLink(formData: FormData) {

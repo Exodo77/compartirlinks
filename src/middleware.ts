@@ -3,15 +3,16 @@ import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
   const authToken = request.cookies.get("auth_token");
-  const isLoginPage = request.nextUrl.pathname === "/login";
+  const urlPath = request.nextUrl.pathname;
+  const isPublicPage = urlPath === "/login" || urlPath === "/register";
 
-  // Si no está logueado y trata de entrar a cualquier página que no sea el login
-  if (!authToken && !isLoginPage) {
+  // Si no está logueado y trata de entrar a cualquier página protegida
+  if (!authToken && !isPublicPage) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // Si está logueado y trata de entrar a la página de login
-  if (authToken && isLoginPage) {
+  // Si está logueado y trata de entrar a páginas públicas (login/registro)
+  if (authToken && isPublicPage) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
