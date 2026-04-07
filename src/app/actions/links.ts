@@ -2,6 +2,7 @@
 
 import { createClient } from "@vercel/kv";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 
 export interface LinkItem {
   id: string;
@@ -16,13 +17,20 @@ const kvClient = createClient({
   token: process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || "",
 });
 
+// Función para separar la base de datos principal de la de invitados
+async function getBoardKey() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("auth_token")?.value;
+  // Si está logueado como admin usa su pizarra principal, si es invitado usa una separada
+  return token === "logged_in" ? "my_link_board" : "guest_link_board";
+}
+
 export async function addLink(formData: FormData) {
   const url = formData.get("url") as string;
   if (!url) return { error: "URL requerida" };
 
   let title = formData.get("title") as string;
   
-  // Si no escribe título, intentamos sacar el nombre de la página de la URL
   if (!title) {
     try {
       title = new URL(url).hostname.replace("www.", "");
@@ -31,7 +39,6 @@ export async function addLink(formData: FormData) {
     }
   }
 
-  // Validar si la URL tiene http:// o https://
   let finalUrl = url;
   if (!/^https?:\/\//i.test(finalUrl)) {
     finalUrl = "https://" + finalUrl;
@@ -46,14 +53,13 @@ export async function addLink(formData: FormData) {
   };
 
   try {
-    // Vercel KV (Redis) guarda los datos como pares llave-valor o listas.
-    // Usamos una lista lpush para meter el enlace más nuevo al principio.
-    await kvClient.lpush("my_link_board", newLink);
+    const boardKey = await getBoardKey();
+    await kvClient.lpush(boardKey, newLink);
     revalidatePath("/");
     return { success: true };
   } catch (error: any) {
     console.error("KV Error:", error);
-    if (error.message.includes("URL requires a valid URI")) {
+    if (error?.message?.includes("URL requires a valid URI")) {
       return { error: "Base de datos desconectada. Falta configurar Vercel KV en el Dashboard." };
     }
     return { error: "Error al guardar el enlace" };
@@ -62,8 +68,8 @@ export async function addLink(formData: FormData) {
 
 export async function getLinks(): Promise<LinkItem[]> {
   try {
-    // Traemos todos los enlaces guardados
-    const links = await kvClient.lrange("my_link_board", 0, -1);
+    const boardKey = await getBoardKey();
+    const links = await kvClient.lrange(boardKey, 0, -1);
     return (links as unknown as LinkItem[]) || [];
   } catch (error) {
     console.error("KV Fetch Error:", error);
@@ -73,14 +79,12 @@ export async function getLinks(): Promise<LinkItem[]> {
 
 export async function editLink(id: string, newTitle: string, newUrl: string) {
   try {
-    // Como KV de Vercel no tiene un "findById", traemos todos los elementos:
-    const links = (await kvClient.lrange("my_link_board", 0, -1)) as unknown as LinkItem[];
+    const boardKey = await getBoardKey();
+    const links = (await kvClient.lrange(boardKey, 0, -1)) as unknown as LinkItem[];
     
-    // Buscamos cuál es su índice en la lista guardada
     const index = links.findIndex(link => link.id === id);
     if (index === -1) return { error: "Link no encontrado" };
 
-    // Validamos la URL igual que en addLink
     let finalUrl = newUrl;
     if (!/^https?:\/\//i.test(finalUrl)) {
       finalUrl = "https://" + finalUrl;
@@ -92,8 +96,7 @@ export async function editLink(id: string, newTitle: string, newUrl: string) {
       url: finalUrl
     };
 
-    // Usamos lset para sobreescribir el ítem en su posición original
-    await kvClient.lset("my_link_board", index, updatedItem);
+    await kvClient.lset(boardKey, index, updatedItem);
     
     revalidatePath("/");
     return { success: true };
