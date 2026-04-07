@@ -1,6 +1,6 @@
 "use server";
 
-import { kv } from "@vercel/kv";
+import { createClient } from "@vercel/kv";
 import { revalidatePath } from "next/cache";
 
 export interface LinkItem {
@@ -9,6 +9,12 @@ export interface LinkItem {
   title: string;
   createdAt: number;
 }
+
+// Creamos un cliente que soporte las variables antiguas de Vercel KV o las nuevas de Upstash
+const kvClient = createClient({
+  url: process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || "",
+  token: process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || "",
+});
 
 export async function addLink(formData: FormData) {
   const url = formData.get("url") as string;
@@ -42,7 +48,7 @@ export async function addLink(formData: FormData) {
   try {
     // Vercel KV (Redis) guarda los datos como pares llave-valor o listas.
     // Usamos una lista lpush para meter el enlace más nuevo al principio.
-    await kv.lpush("my_link_board", newLink);
+    await kvClient.lpush("my_link_board", newLink);
     revalidatePath("/");
     return { success: true };
   } catch (error: any) {
@@ -57,7 +63,7 @@ export async function addLink(formData: FormData) {
 export async function getLinks(): Promise<LinkItem[]> {
   try {
     // Traemos todos los enlaces guardados
-    const links = await kv.lrange("my_link_board", 0, -1);
+    const links = await kvClient.lrange("my_link_board", 0, -1);
     return (links as unknown as LinkItem[]) || [];
   } catch (error) {
     console.error("KV Fetch Error:", error);
