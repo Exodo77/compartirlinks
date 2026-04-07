@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { login } from "@/app/actions/auth";
+import { login, loginAsGuest } from "@/app/actions/auth";
 import { Lock, LogIn } from "lucide-react";
 
 export default function LoginPage() {
@@ -85,6 +85,24 @@ export default function LoginPage() {
               )}
             </button>
           </form>
+
+          {/* Botón de Invitado */}
+          <div className="mt-6 flex flex-col items-center gap-4">
+            <div className="w-full flex items-center gap-3">
+              <div className="h-px bg-zinc-800 flex-1" />
+              <span className="text-xs text-zinc-600 font-medium uppercase">o</span>
+              <div className="h-px bg-zinc-800 flex-1" />
+            </div>
+            
+            <form action={loginAsGuest} className="w-full">
+              <button
+                type="submit"
+                className="w-full bg-zinc-900/50 hover:bg-emerald-500/10 text-zinc-400 hover:text-emerald-400 border border-zinc-800 hover:border-emerald-500/30 font-medium rounded-xl px-4 py-3 transition-all flex items-center justify-center gap-2"
+              >
+                Entrar como Invitado
+              </button>
+            </form>
+          </div>
         </div>
       </main>
     </div>

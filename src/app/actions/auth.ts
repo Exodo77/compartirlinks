@@ -27,3 +27,15 @@ export async function logout() {
   cookieStore.delete("auth_token");
   redirect("/login");
 }
+
+export async function loginAsGuest() {
+  const cookieStore = await cookies();
+  cookieStore.set("auth_token", "guest", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 60 * 60 * 24 * 7, // 7 días para el invitado
+    path: "/",
+  });
+  
+  redirect("/");
+}

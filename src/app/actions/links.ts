@@ -70,3 +70,35 @@ export async function getLinks(): Promise<LinkItem[]> {
     return [];
   }
 }
+
+export async function editLink(id: string, newTitle: string, newUrl: string) {
+  try {
+    // Como KV de Vercel no tiene un "findById", traemos todos los elementos:
+    const links = (await kvClient.lrange("my_link_board", 0, -1)) as unknown as LinkItem[];
+    
+    // Buscamos cuál es su índice en la lista guardada
+    const index = links.findIndex(link => link.id === id);
+    if (index === -1) return { error: "Link no encontrado" };
+
+    // Validamos la URL igual que en addLink
+    let finalUrl = newUrl;
+    if (!/^https?:\/\//i.test(finalUrl)) {
+      finalUrl = "https://" + finalUrl;
+    }
+
+    const updatedItem = {
+      ...links[index],
+      title: newTitle,
+      url: finalUrl
+    };
+
+    // Usamos lset para sobreescribir el ítem en su posición original
+    await kvClient.lset("my_link_board", index, updatedItem);
+    
+    revalidatePath("/");
+    return { success: true };
+  } catch (error) {
+    console.error("KV Edit Error:", error);
+    return { error: "No se pudo editar el enlace." };
+  }
+}
