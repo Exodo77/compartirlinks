@@ -1,11 +1,13 @@
 import { getLinks } from "./actions/links";
 import { logout } from "./actions/auth";
-import { Link2, LogOut, Plus, Globe } from "lucide-react";
+import { isAdmin } from "./actions/admin";
+import { Link2, LogOut, Plus, Globe, Shield } from "lucide-react";
 import AddLinkForm from "./components/AddLinkForm";
 import LinkCard from "./components/LinkCard";
 
 export default async function Home() {
   const links = await getLinks();
+  const isUserAdmin = await isAdmin();
 
   return (
     <div className="min-h-screen pb-20 relative">
@@ -22,12 +24,20 @@ export default async function Home() {
             <h1 className="text-2xl font-bold tracking-tight text-white drop-shadow-sm">Mis Links</h1>
           </div>
           
-          <form action={logout}>
-            <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors border border-red-500/20 text-sm font-medium">
-              <LogOut className="w-4 h-4" />
-              <span className="hidden sm:inline">Cerrar Sesión</span>
-            </button>
-          </form>
+          <div className="flex items-center gap-3">
+            {isUserAdmin && (
+              <a href="/admin" className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 hover:text-indigo-300 transition-colors border border-indigo-500/20 text-sm font-medium">
+                <Shield className="w-4 h-4" />
+                <span className="hidden sm:inline">Panel Admin</span>
+              </a>
+            )}
+            <form action={logout}>
+              <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors border border-red-500/20 text-sm font-medium">
+                <LogOut className="w-4 h-4" />
+                <span className="hidden sm:inline">Cerrar Sesión</span>
+              </button>
+            </form>
+          </div>
         </header>
 
         <section className="mb-16">
