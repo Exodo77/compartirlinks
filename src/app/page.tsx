@@ -1,12 +1,16 @@
 import { getLinks } from "./actions/links";
+import { getNotes } from "./actions/notes";
 import { logout } from "./actions/auth";
 import { isAdmin } from "./actions/admin";
-import { Link2, LogOut, Plus, Globe, Shield } from "lucide-react";
+import { Link2, LogOut, Plus, Globe, Shield, StickyNote } from "lucide-react";
 import AddLinkForm from "./components/AddLinkForm";
 import LinkCard from "./components/LinkCard";
+import AddNoteForm from "./components/AddNoteForm";
+import NoteCard from "./components/NoteCard";
 
 export default async function Home() {
   const links = await getLinks();
+  const notes = await getNotes();
   const isUserAdmin = await isAdmin();
 
   return (
@@ -21,7 +25,7 @@ export default async function Home() {
             <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center ring-1 ring-white/20 backdrop-blur-md">
               <Link2 className="w-5 h-5 text-emerald-400" />
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-white drop-shadow-sm">Mis Links</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-white drop-shadow-sm">Mi Espacio</h1>
           </div>
           
           <div className="flex items-center gap-3">
@@ -40,37 +44,73 @@ export default async function Home() {
           </div>
         </header>
 
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
+          {/* Columna Links */}
+          <section>
+            <div className="glass-card rounded-2xl p-6 relative overflow-hidden group h-full">
+              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-50 group-hover:opacity-100 transition-opacity" />
+              <h2 className="text-lg font-medium text-white mb-6 flex items-center gap-2">
+                <Plus className="w-5 h-5 text-emerald-400" />
+                Guardar Nuevo Enlace
+              </h2>
+              <AddLinkForm />
+            </div>
+          </section>
+
+          {/* Columna Notas */}
+          <section>
+            <div className="glass-card rounded-2xl p-6 relative overflow-hidden group h-full">
+              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-50 group-hover:opacity-100 transition-opacity" />
+              <h2 className="text-lg font-medium text-white mb-6 flex items-center gap-2">
+                <Plus className="w-5 h-5 text-indigo-400" />
+                Crear Nota / Lista
+              </h2>
+              <AddNoteForm />
+            </div>
+          </section>
+        </div>
+
+        {/* Listado de Enlaces */}
         <section className="mb-16">
-          <div className="glass-card rounded-2xl p-6 sm:p-8 relative overflow-hidden group">
-            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-50 group-hover:opacity-100 transition-opacity" />
-            
-            <h2 className="text-lg font-medium text-white mb-6 flex items-center gap-2">
-              <Plus className="w-5 h-5 text-indigo-400" />
-              Guardar Nuevo Enlace
-            </h2>
-
-            <AddLinkForm />
-          </div>
-        </section>
-
-        <section>
           <div className="flex items-center gap-3 mb-8">
             <Globe className="w-5 h-5 text-zinc-400" />
-            <h3 className="text-xl font-semibold text-zinc-200">Tu Pizarra ({links.length})</h3>
+            <h3 className="text-xl font-semibold text-zinc-200">Mis Enlaces ({links.length})</h3>
           </div>
 
           {links.length === 0 ? (
-            <div className="text-center py-20 border border-dashed border-zinc-800 rounded-2xl bg-zinc-900/20">
-              <div className="w-16 h-16 rounded-full bg-zinc-800 flex items-center justify-center mx-auto mb-4">
-                <Link2 className="w-8 h-8 text-zinc-600" />
+            <div className="text-center py-12 border border-dashed border-zinc-800 rounded-2xl bg-zinc-900/20">
+              <div className="w-12 h-12 rounded-full bg-zinc-800 flex items-center justify-center mx-auto mb-3">
+                <Link2 className="w-6 h-6 text-zinc-600" />
               </div>
-              <p className="text-zinc-400 font-medium">Aún no tienes enlaces guardados.</p>
-              <p className="text-zinc-600 text-sm mt-1">Pega un enlace arriba para empezar tu colección.</p>
+              <p className="text-zinc-500 font-medium text-sm">Aún no tienes enlaces guardados.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {links.map((link) => (
                 <LinkCard key={link.id} link={link} />
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Listado de Notas */}
+        <section>
+          <div className="flex items-center gap-3 mb-8">
+            <StickyNote className="w-5 h-5 text-zinc-400" />
+            <h3 className="text-xl font-semibold text-zinc-200">Mis Notas ({notes.length})</h3>
+          </div>
+
+          {notes.length === 0 ? (
+            <div className="text-center py-12 border border-dashed border-zinc-800 rounded-2xl bg-zinc-900/20">
+              <div className="w-12 h-12 rounded-full bg-zinc-800 flex items-center justify-center mx-auto mb-3">
+                <StickyNote className="w-6 h-6 text-zinc-600" />
+              </div>
+              <p className="text-zinc-500 font-medium text-sm">Tu espacio de notas está en blanco.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {notes.map((note) => (
+                <NoteCard key={note.id} note={note} />
               ))}
             </div>
           )}
