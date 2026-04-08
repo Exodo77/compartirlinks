@@ -7,6 +7,7 @@ import AddLinkForm from "./components/AddLinkForm";
 import LinkCard from "./components/LinkCard";
 import AddNoteForm from "./components/AddNoteForm";
 import NoteCard from "./components/NoteCard";
+import ThemeToggle from "./components/ThemeToggle";
 
 export default async function Home() {
   const links = await getLinks();
@@ -20,23 +21,25 @@ export default async function Home() {
       <div className="absolute bottom-1/4 right-1/4 w-[30rem] h-[30rem] bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none" />
       
       <div className="max-w-5xl mx-auto px-6 pt-12 relative z-10">
-        <header className="flex items-center justify-between mb-16">
-          <div className="flex items-center gap-3">
+        <header className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-16">
+          <div className="flex items-center gap-3 w-full sm:w-auto justify-center sm:justify-start">
             <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center ring-1 ring-white/20 backdrop-blur-md">
               <Link2 className="w-5 h-5 text-emerald-400" />
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-white drop-shadow-sm">Mi Espacio</h1>
           </div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 w-full sm:w-auto justify-center sm:justify-end overflow-hidden">
+            <ThemeToggle />
+            
             {isUserAdmin && (
-              <a href="/admin" className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 hover:text-indigo-300 transition-colors border border-indigo-500/20 text-sm font-medium">
+              <a href="/admin" className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 hover:text-indigo-300 transition-colors border border-indigo-500/20 text-sm font-medium shrink-0">
                 <Shield className="w-4 h-4" />
                 <span className="hidden sm:inline">Panel Admin</span>
               </a>
             )}
             <form action={logout}>
-              <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors border border-red-500/20 text-sm font-medium">
+              <button className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors border border-red-500/20 text-sm font-medium shrink-0">
                 <LogOut className="w-4 h-4" />
                 <span className="hidden sm:inline">Cerrar Sesión</span>
               </button>

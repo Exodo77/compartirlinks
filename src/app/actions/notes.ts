@@ -113,3 +113,33 @@ export async function deleteNote(noteId: string) {
     return { error: "Error al borrar la nota." };
   }
 }
+
+export async function editNote(noteId: string, title: string, content: string, newTasks: string[]) {
+  try {
+    const key = await getNotesKey();
+    const notes = (await getKvClient().lrange(key, 0, -1)) as unknown as NoteItem[];
+    
+    const index = notes.findIndex(n => n.id === noteId);
+    if (index === -1) return { error: "Nota no encontrada" };
+
+    const note = notes[index];
+    note.title = title;
+    
+    if (!note.isChecklist) {
+      note.content = content;
+    } else {
+      // Re-map tasks: keep old completion state if text match, otherwise false
+      note.tasks = newTasks.filter(t => t.trim() !== "").map(text => {
+        const existing = note.tasks.find(ot => ot.text === text);
+        return existing ? existing : { id: crypto.randomUUID(), text, completed: false };
+      });
+    }
+
+    await getKvClient().lset(key, index, note);
+    revalidatePath("/");
+    return { success: true };
+  } catch (error) {
+    console.error("KV Edit Error:", error);
+    return { error: "Error al actualizar la nota." };
+  }
+}

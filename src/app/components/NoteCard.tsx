@@ -1,25 +1,33 @@
 "use client";
 
-import { NoteItem, toggleNoteTask, deleteNote } from "@/app/actions/notes";
+import { NoteItem, toggleNoteTask, deleteNote, editNote } from "@/app/actions/notes";
 import { useTransition, useState, useEffect } from "react";
-import { Check, Trash2, BookOpen, X, Maximize2 } from "lucide-react";
+import { Check, Trash2, BookOpen, X, Maximize2, Edit2, Save, Plus } from "lucide-react";
 
 export default function NoteCard({ note }: { note: NoteItem }) {
   const [isPending, startTransition] = useTransition();
   const [isFocused, setIsFocused] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
-  // Prevenir scroll en el background cuando el modal está abierto
+  // Edit states
+  const [editTitle, setEditTitle] = useState(note.title);
+  const [editContent, setEditContent] = useState(note.content);
+  const [editTasks, setEditTasks] = useState(note.tasks?.map(t => t.text) || []);
+  const [editError, setEditError] = useState("");
+
   useEffect(() => {
     if (isFocused) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "unset";
+      setIsEditing(false); // Reset edit state when closing
     }
     return () => { document.body.style.overflow = "unset"; };
   }, [isFocused]);
 
   const handleToggle = (taskId: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
+    if (isEditing) return; // Prevent toggle when editing
     startTransition(async () => {
       await toggleNoteTask(note.id, taskId);
     });
@@ -34,38 +42,102 @@ export default function NoteCard({ note }: { note: NoteItem }) {
     }
   };
 
+  const handleSaveEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!editTitle.trim() && !editContent.trim() && editTasks.every(t => !t.trim())) {
+      setEditError("La nota no puede estar vacía.");
+      return;
+    }
+    setEditError("");
+    startTransition(async () => {
+      await editNote(note.id, editTitle, editContent, editTasks);
+      setIsEditing(false);
+    });
+  };
+
   const date = new Date(note.createdAt).toLocaleDateString("es-ES", {
     day: "numeric",
     month: "short",
   });
 
-  const renderContent = (isModal: boolean) => (
-    <div className={`flex-1 overflow-y-auto custom-scrollbar text-sm ${isModal ? 'text-zinc-200 mt-6 text-base' : 'max-h-48 text-zinc-300'}`}>
-      {!note.isChecklist ? (
-        <p className="whitespace-pre-wrap">{note.content}</p>
-      ) : (
-        <div className={`space-y-2 ${isModal ? 'space-y-4' : ''}`}>
-          {note.tasks?.map((task) => (
-            <label key={task.id} className={`flex items-start gap-3 cursor-pointer group/item p-1 rounded-lg hover:bg-white/5 transition-colors ${isModal ? 'p-3 border border-white/5 bg-black/20' : ''}`} onClick={(e) => e.stopPropagation()}>
-              <div className={`mt-0.5 shrink-0 rounded flex items-center justify-center transition-colors border ${isModal ? 'w-5 h-5' : 'w-4 h-4'} ${task.completed ? 'bg-indigo-500 border-indigo-500 text-white' : 'border-zinc-600 bg-zinc-900/50 text-transparent group-hover/item:border-indigo-400'}`}>
-                <input
-                  type="checkbox"
-                  className="sr-only"
-                  checked={task.completed}
-                  onChange={(e) => handleToggle(task.id)}
-                  disabled={isPending}
-                />
-                <Check className={`${isModal ? 'w-4 h-4' : 'w-3 h-3'} ${task.completed ? 'opacity-100' : 'opacity-0'}`} />
-              </div>
-              <span className={`transition-all break-words w-full ${task.completed ? 'text-zinc-500 line-through' : ''}`}>
-                {task.text}
-              </span>
-            </label>
-          ))}
+  const updateEditTask = (i: number, val: string) => {
+    const arr = [...editTasks];
+    arr[i] = val;
+    setEditTasks(arr);
+  };
+  const removeEditTask = (i: number) => {
+    const arr = [...editTasks];
+    arr.splice(i, 1);
+    setEditTasks(arr);
+  };
+
+  const renderContent = (isModal: boolean) => {
+    if (isEditing && isModal) {
+      return (
+        <div className="flex flex-col gap-4 text-sm mt-4 w-full">
+          {!note.isChecklist ? (
+             <textarea
+               value={editContent}
+               onChange={(e) => setEditContent(e.target.value)}
+               className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 min-h-[200px]"
+             />
+          ) : (
+            <div className="space-y-2">
+              {editTasks.map((taskStr, i) => (
+                <div key={i} className="flex flex-row items-center gap-2">
+                  <input
+                    type="text"
+                    value={taskStr}
+                    onChange={(e) => updateEditTask(i, e.target.value)}
+                    className="flex-1 bg-zinc-900/50 border border-zinc-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
+                  />
+                  <button type="button" onClick={() => removeEditTask(i)} className="p-2 text-zinc-500 hover:text-red-400">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => setEditTasks([...editTasks, ""])}
+                className="flex items-center gap-2 text-sm text-indigo-400 hover:text-indigo-300 mt-2"
+              >
+                <Plus className="w-4 h-4" /> Añadir otro
+              </button>
+            </div>
+          )}
+          {editError && <p className="text-red-400 text-sm">{editError}</p>}
         </div>
-      )}
-    </div>
-  );
+      );
+    }
+
+    return (
+      <div className={`flex-1 overflow-y-auto custom-scrollbar text-sm ${isModal ? 'text-zinc-200 mt-6 text-base' : 'max-h-48 text-zinc-300'}`}>
+        {!note.isChecklist ? (
+          <p className="whitespace-pre-wrap">{note.content}</p>
+        ) : (
+          <div className={`space-y-2 ${isModal ? 'space-y-4' : ''}`}>
+            {note.tasks?.map((task) => (
+              <label key={task.id} className={`flex items-start gap-3 cursor-pointer group/item p-1 rounded-lg hover:bg-white/5 transition-colors ${isModal ? 'p-3 border border-white/5 bg-black/20' : ''}`} onClick={(e) => e.stopPropagation()}>
+                <div className={`mt-0.5 shrink-0 rounded flex items-center justify-center transition-colors border ${isModal ? 'w-5 h-5' : 'w-4 h-4'} ${task.completed ? 'bg-indigo-500 border-indigo-500 text-white' : 'border-zinc-600 bg-zinc-900/50 text-transparent group-hover/item:border-indigo-400'}`}>
+                  <input
+                    type="checkbox"
+                    className="sr-only"
+                    checked={task.completed}
+                    onChange={(e) => handleToggle(task.id)}
+                    disabled={isPending}
+                  />
+                  <Check className={`${isModal ? 'w-4 h-4' : 'w-3 h-3'} ${task.completed ? 'opacity-100' : 'opacity-0'}`} />
+                </div>
+                <span className={`transition-all break-words w-full ${task.completed ? 'text-zinc-500 line-through' : ''}`}>
+                  {task.text}
+                </span>
+              </label>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <>
@@ -84,11 +156,11 @@ export default function NoteCard({ note }: { note: NoteItem }) {
           
           <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all -mt-1 -mr-1">
             <button
-              onClick={() => setIsFocused(true)}
+              onClick={(e) => { e.stopPropagation(); setIsEditing(true); setIsFocused(true); }}
               className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-indigo-500/10 transition-colors"
-              title="Enfocar"
+              title="Editar"
             >
-              <Maximize2 className="w-4 h-4 text-zinc-400 hover:text-indigo-400" />
+              <Edit2 className="w-4 h-4 text-zinc-400 hover:text-indigo-400" />
             </button>
             <button
               onClick={handleDelete}
@@ -125,17 +197,48 @@ export default function NoteCard({ note }: { note: NoteItem }) {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header del Modal */}
-            <div className="flex items-center justify-between p-6 sm:px-8 border-b border-white/10 shrink-0 sticky top-0 bg-zinc-950/80 backdrop-blur-xl z-20">
-              <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-3">
-                <BookOpen className="w-6 h-6 text-indigo-400" />
-                {note.title || (note.isChecklist ? "Lista de Compras/Tareas" : "Nota rápida")}
-              </h2>
-              <button 
-                onClick={() => setIsFocused(false)}
-                className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 hover:text-white text-zinc-400 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+            <div className="flex items-start sm:items-center justify-between p-6 sm:px-8 border-b border-white/10 shrink-0 sticky top-0 bg-zinc-950/80 backdrop-blur-xl z-20 gap-4">
+              {isEditing ? (
+                <input
+                   type="text"
+                   value={editTitle}
+                   onChange={(e) => setEditTitle(e.target.value)}
+                   className="flex-1 bg-transparent border-b border-indigo-500 text-xl sm:text-2xl font-bold text-white focus:outline-none py-1"
+                   placeholder="Título de la nota..."
+                />
+              ) : (
+                <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-3">
+                  <BookOpen className="w-6 h-6 text-indigo-400" />
+                  {note.title || (note.isChecklist ? "Lista de Compras/Tareas" : "Nota rápida")}
+                </h2>
+              )}
+              
+              <div className="flex items-center gap-2">
+                {isEditing ? (
+                  <button 
+                    onClick={handleSaveEdit}
+                    disabled={isPending}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white transition-colors"
+                  >
+                    {isPending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save className="w-4 h-4" />}
+                    Guardar
+                  </button>
+                ) : (
+                  <button 
+                    onClick={() => setIsEditing(true)}
+                    className="w-10 h-10 rounded-full bg-indigo-500/10 flex items-center justify-center hover:bg-indigo-500/20 text-indigo-400 transition-colors"
+                    title="Editar nota"
+                  >
+                    <Edit2 className="w-5 h-5" />
+                  </button>
+                )}
+                <button 
+                  onClick={() => setIsFocused(false)}
+                  className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 hover:text-white text-zinc-400 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             {/* Contenido Completo del Modal */}

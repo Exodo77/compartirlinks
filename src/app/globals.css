@@ -33,3 +33,19 @@ body {
     box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
   }
 }
+
+/* Magia para el tema claro sin tener que reescribir docenas de clases Tailwind */
+html.light {
+  filter: invert(1) hue-rotate(180deg);
+  background-color: white; /* Fuerza el fondo para evitar bugs visuales */
+}
+
+/* Evitar que las sombras invertidas se vean como brillos fuertes */
+html.light .glass-card {
+  box-shadow: 0 4px 30px rgba(255, 255, 255, 0.1);
+}
+
+/* Los modales u overlay requieren forzar un color en claro */
+html.light .backdrop-blur-md {
+  background: rgba(255,255,255,0.6);
+}
