@@ -1,7 +1,7 @@
 "use client";
 
-import { ExternalLink, Pencil, Save, X } from "lucide-react";
-import { LinkItem, editLink } from "@/app/actions/links";
+import { ExternalLink, Pencil, Save, X, Trash2 } from "lucide-react";
+import { LinkItem, editLink, deleteLink } from "@/app/actions/links";
 import { useState, useTransition } from "react";
 
 export default function LinkCard({ link }: { link: LinkItem }) {
@@ -19,6 +19,17 @@ export default function LinkCard({ link }: { link: LinkItem }) {
         alert(result.error);
       }
     });
+  };
+
+  const handleDelete = () => {
+    if (confirm("¿Estás seguro de que deseas borrar este enlace?")) {
+      startTransition(async () => {
+        const result = await deleteLink(link.id);
+        if (!result.success) {
+          alert(result.error);
+        }
+      });
+    }
   };
 
   const date = new Date(link.createdAt).toLocaleDateString("es-ES", {
@@ -76,10 +87,10 @@ export default function LinkCard({ link }: { link: LinkItem }) {
   }
 
   return (
-    <div className="group glass-card rounded-2xl p-6 hover:border-emerald-500/30 hover:bg-white/[0.02] transition-all relative overflow-hidden flex flex-col h-full">
+    <div className={`group glass-card rounded-2xl p-6 hover:border-emerald-500/30 hover:bg-white/[0.02] transition-all relative flex flex-col h-full ${isPending ? 'opacity-50 cursor-not-allowed' : ''}`}>
       <div className="absolute inset-y-0 left-0 w-1 bg-emerald-500/0 group-hover:bg-emerald-500/50 transition-colors" />
       
-      <div className="flex items-start justify-between gap-4 flex-1">
+      <div className="flex items-start justify-between gap-4 flex-1 overflow-hidden">
         <a
           href={link.url}
           target="_blank"
@@ -95,7 +106,7 @@ export default function LinkCard({ link }: { link: LinkItem }) {
         </a>
         
         {/* Actions Menu */}
-        <div className="flex flex-col gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+        <div className="flex sm:flex-col flex-row gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
           <a
             href={link.url}
             target="_blank"
@@ -107,15 +118,24 @@ export default function LinkCard({ link }: { link: LinkItem }) {
           </a>
           <button
             onClick={() => setIsEditing(true)}
+            disabled={isPending}
             className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center shrink-0 hover:bg-indigo-500/10 transition-colors"
             title="Editar"
           >
             <Pencil className="w-4 h-4 text-zinc-400 hover:text-indigo-400 transition-colors" />
           </button>
+          <button
+            onClick={handleDelete}
+            disabled={isPending}
+            className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center shrink-0 hover:bg-red-500/10 transition-colors"
+            title="Eliminar"
+          >
+            <Trash2 className="w-4 h-4 text-zinc-400 hover:text-red-400 transition-colors" />
+          </button>
         </div>
       </div>
       
-      <div className="mt-4 pt-4 border-t border-white/[0.05] text-xs text-zinc-600 font-medium">
+      <div className="mt-4 pt-4 border-t border-white/[0.05] text-xs text-zinc-600 font-medium shrink-0">
         Agregado el {date}
       </div>
     </div>

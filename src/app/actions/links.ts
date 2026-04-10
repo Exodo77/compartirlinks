@@ -100,3 +100,30 @@ export async function editLink(id: string, newTitle: string, newUrl: string) {
     return { error: "No se pudo editar el enlace." };
   }
 }
+
+export async function deleteLink(id: string) {
+  try {
+    const boardKey = await getBoardKey();
+    const links = (await getKvClient().lrange(boardKey, 0, -1)) as unknown as LinkItem[];
+    
+    const index = links.findIndex(link => link.id === id);
+    if (index === -1) return { error: "Enlace no encontrado" };
+
+    links.splice(index, 1);
+    
+    await getKvClient().del(boardKey);
+    if (links.length > 0) {
+      const pipeline = getKvClient().pipeline();
+      for (const link of links.reverse()) {
+        pipeline.lpush(boardKey, link);
+      }
+      await pipeline.exec();
+    }
+    
+    revalidatePath("/");
+    return { success: true };
+  } catch (error) {
+    console.error("KV Delete Error:", error);
+    return { error: "Error al borrar el enlace." };
+  }
+}
